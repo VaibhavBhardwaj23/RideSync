@@ -27,6 +27,9 @@ import {
 import MapLoader from "@/components/map-loader";
 import { activeRide } from "@/lib/mock-data";
 import type { ChangeEvent, FormEvent } from "react";
+import type { Ride } from "../lib/type";
+import CreateRideModal from "../components/rides/create-ride-modal";
+import RideList from "../components/rides/ride-list";
 
 export default function Home() {
   const [showCreate, setShowCreate] = useState(false);
@@ -36,11 +39,18 @@ export default function Home() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [isCreateRideOpen, setIsCreateRideOpen] = useState(false);
   const [selectedRiderId, setSelectedRiderId] = useState<string | null>(null);
+  const [selectedRideId, setSelectedRideId] = useState<string>(activeRide.id);
+  const [rides, setRides] = useState<Ride[]>([activeRide]);
 
-  const riders = activeRide.riders;
+  const selectedRide =
+    rides.find((ride) => ride.id === selectedRideId) ?? activeRide;
+
+  const riders = selectedRide.riders;
+
   const disconnected = riders.filter(
     (rider) => rider.status === "disconnected",
   ).length;
+
   const stopped = riders.filter((rider) => rider.status === "stopped").length;
 
   //
@@ -56,15 +66,30 @@ export default function Home() {
       alert("Please enter a ride name and destination.");
       return;
     }
-    alert(`Ride "${rideName}" to ${destination} is ready to create!`);
 
-    // setShowCreate(false);
-    // setNotice(
-    //   `“${rideName}” is ready to configure. Ride creation is currently a frontend demo.`,
-    // );
-    // setRideName("");
-    // setDestination("");
+    const newRide: Ride = {
+      id: crypto.randomUUID(),
+      name: rideName.trim(),
+      destination: destination.trim(),
+      date: new Date().toISOString(),
+      status: "upcoming",
+      riders: [],
+    };
+
+    setRides((previousRides) => [...previousRides, newRide]);
+
+    setShowCreate(false);
+    setNotice(`"${newRide.name}" was created successfully!`);
+    setRideName("");
+    setDestination("");
   }
+
+  //
+  //
+
+  //
+  //
+  //
 
   return (
     <main className="min-h-screen bg-[#0b0d0f] text-[#f2f4f1]">
@@ -293,20 +318,26 @@ export default function Home() {
                 );
               })}
             </div>
-
+            <RideList
+              rides={rides}
+              selectedRideId={selectedRideId}
+              onSelectRide={setSelectedRideId}
+            />
             {/* Ride heading */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base font-semibold">{activeRide.name}</h3>
+                  <h3 className="text-base font-semibold">
+                    {selectedRide.name}
+                  </h3>
                   <span className="rounded-full border border-[#39472b] bg-[#1c2615] px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-[#c6f36a]">
-                    Active
+                    {selectedRide.status}
                   </span>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[#929a9a]">
                   <span className="flex items-center gap-1.5">
                     <MapPin size={14} />
-                    {activeRide.destination}
+                    {selectedRide.destination}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Users size={14} />
@@ -414,68 +445,16 @@ export default function Home() {
       </div>
 
       {/* Create ride modal */}
+
       {showCreate && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setShowCreate(false);
-          }}
-        >
-          <div className="w-full max-w-md rounded-2xl border border-[#303638] bg-[#121518] p-6 shadow-2xl">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">Plan a new ride</h2>
-                <p className="mt-1 text-sm text-[#929a9a]">
-                  Give your next adventure a name.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowCreate(false)}
-                aria-label="Close dialog"
-                className="rounded-lg p-2 text-[#929a9a] hover:bg-[#202427]"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={createRide} className="mt-6 space-y-4">
-              <label className="block text-sm text-[#d4d9d4]">
-                Ride name
-                <input
-                  required
-                  value={rideName}
-                  onChange={handleRideNameChange}
-                  placeholder="e.g. Sunday mountain run"
-                  className="mt-2 w-full rounded-xl border border-[#303638] bg-[#0b0d0f] px-4 py-3 text-sm outline-none placeholder:text-[#626b6b] focus:border-[#9bc450]"
-                />
-              </label>
-
-              <label className="block text-sm text-[#d4d9d4]">
-                Destination
-                <input
-                  required
-                  value={destination}
-                  onChange={(event) => setDestination(event.target.value)}
-                  placeholder="e.g. Shimla, Himachal Pradesh"
-                  className="mt-2 w-full rounded-xl border border-[#303638] bg-[#0b0d0f] px-4 py-3 text-sm outline-none placeholder:text-[#626b6b] focus:border-[#9bc450]"
-                />
-              </label>
-
-              <div className="rounded-xl border border-[#303638] bg-[#0d100e] p-3 text-xs leading-5 text-[#929a9a]">
-                This is a frontend prototype. Saving rides and inviting members
-                will be connected to the backend in a later phase.
-              </div>
-
-              <button
-                type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#c6f36a] px-4 py-3 text-sm font-semibold text-[#14190c] hover:bg-[#d5fa8d]"
-              >
-                <Flag size={16} />
-                Create ride
-              </button>
-            </form>
-          </div>
-        </div>
+        <CreateRideModal
+          rideName={rideName}
+          destination={destination}
+          onRideNameChange={handleRideNameChange}
+          onDestinationChange={(event) => setDestination(event.target.value)}
+          onSubmit={createRide}
+          onClose={() => setShowCreate(false)}
+        />
       )}
     </main>
   );
