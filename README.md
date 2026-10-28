@@ -17,3 +17,7 @@ create-ride-modal.tsx — ride creation UI
 
 mock-data.ts — sample rides and riders
 types.ts — TypeScript models
+
+<!--  -->
+
+Individual Component Creation
